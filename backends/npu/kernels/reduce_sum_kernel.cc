@@ -86,6 +86,16 @@ void SumRawKernel(const Context& dev_ctx,
 
   aclrtStream stream = static_cast<aclrtStream>(dev_ctx.stream());
 
+  if (x.dims().size() == 0) {
+    const auto& cast_runner = NpuOpRunner(
+        "Cast",
+        {x},
+        {*out},
+        {{"dst_tytpe", static_cast<int>(ConvertToNpuDtype(out->dtype()))}});
+    cast_runner.Run(stream);
+    return;
+  }
+
   phi::DenseTensor cast_x;
   phi::DenseTensor cast_out;
 
@@ -223,10 +233,11 @@ void SumGradKernel(const Context& dev_ctx,
   reduce_all = (reduce_all || full_dim || dims.size() == 0);
 
   if (keep_dims || reduce_all) {
-    const auto& runner = NpuOpRunner("BroadcastToD",
-                                     {out_grad_tmp},
-                                     {*x_grad},
-                                     {{"shape", phi::vectorize(x.dims())}});
+    NpuOpRunner runner;
+    runner.SetType("BroadcastTo")
+        .AddInput(out_grad_tmp)
+        .AddInput(dev_ctx, phi::vectorize(x.dims()))
+        .AddOutput(*x_grad);
     runner.Run(stream);
   } else {
     phi::DDim out_dims;
@@ -234,10 +245,11 @@ void SumGradKernel(const Context& dev_ctx,
 
     out_grad_tmp.Resize(out_dims);
 
-    const auto& runner = NpuOpRunner("BroadcastToD",
-                                     {out_grad_tmp},
-                                     {*x_grad},
-                                     {{"shape", phi::vectorize(x.dims())}});
+    NpuOpRunner runner;
+    runner.SetType("BroadcastTo")
+        .AddInput(out_grad_tmp)
+        .AddInput(dev_ctx, phi::vectorize(x.dims()))
+        .AddOutput(*x_grad);
     runner.Run(stream);
   }
 }
@@ -252,7 +264,8 @@ PD_REGISTER_PLUGIN_KERNEL(sum_raw,
                           int32_t,
                           int64_t,
                           phi::dtype::float16,
-                          float) {
+                          float,
+                          double) {
   kernel->OutputAt(0).SetDataType(phi::DataType::UNDEFINED);
 }
 
@@ -264,7 +277,8 @@ PD_REGISTER_PLUGIN_KERNEL(sum,
                           int32_t,
                           int64_t,
                           phi::dtype::float16,
-                          float) {
+                          float,
+                          double) {
   kernel->OutputAt(0).SetDataType(phi::DataType::UNDEFINED);
 }
 
@@ -275,6 +289,7 @@ PD_REGISTER_PLUGIN_KERNEL(sum_grad,
                           int32_t,
                           int64_t,
                           phi::dtype::float16,
-                          float) {
+                          float,
+                          double) {
   kernel->OutputAt(0).SetDataType(phi::DataType::UNDEFINED);
 }

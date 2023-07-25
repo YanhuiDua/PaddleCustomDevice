@@ -235,11 +235,12 @@ void SiluKernel(const Context& dev_ctx,
 
 template <typename T, typename Context>
 void SiluGradKernel(const Context& dev_ctx,
+                    const phi::DenseTensor& x,
                     const phi::DenseTensor& out,
                     const phi::DenseTensor& dout,
                     phi::DenseTensor* dx) {
   ActivationGradKernelV3<T, Context>(
-      dev_ctx, out, dout, CNNL_ACTIVATION_SILU, dx);
+      dev_ctx, x, dout, CNNL_ACTIVATION_SILU, dx);
 }
 
 template <typename T, typename Context>
@@ -903,13 +904,6 @@ PD_REGISTER_PLUGIN_KERNEL(relu6,
                           float,
                           phi::dtype::float16) {}
 
-PD_REGISTER_PLUGIN_KERNEL(relu6_raw,
-                          mlu,
-                          ALL_LAYOUT,
-                          custom_kernel::Relu6RawKernel,
-                          float,
-                          phi::dtype::float16) {}
-
 PD_REGISTER_PLUGIN_KERNEL(relu6_grad,
                           mlu,
                           ALL_LAYOUT,
@@ -1078,14 +1072,14 @@ PD_REGISTER_PLUGIN_KERNEL(hardswish_grad,
                           float,
                           phi::dtype::float16) {}
 
-PD_REGISTER_PLUGIN_KERNEL(hard_sigmoid,
+PD_REGISTER_PLUGIN_KERNEL(hardsigmoid,
                           mlu,
                           ALL_LAYOUT,
                           custom_kernel::HardSigmoidKernel,
                           float,
                           phi::dtype::float16) {}
 
-PD_REGISTER_PLUGIN_KERNEL(hard_sigmoid_grad,
+PD_REGISTER_PLUGIN_KERNEL(hardsigmoid_grad,
                           mlu,
                           ALL_LAYOUT,
                           custom_kernel::HardSigmoidGradKernel,
